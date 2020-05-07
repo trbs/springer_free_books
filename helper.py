@@ -77,12 +77,17 @@ def indices_of_categories(categories, books):
 
 
 def download_book(url, book_path):
+    block_size = 1 * 1024
     if not os.path.exists(book_path):
         with requests.get(url, stream=True) as req:
+            total_length = int(req.headers.get('content-length'), 0)
             path = create_path('./tmp')
             tmp_file = os.path.join(path, '_-_temp_file_-_.bak')
             with open(tmp_file, 'wb') as out_file:
-                shutil.copyfileobj(req.raw, out_file)
+                with tqdm(total=total_length, unit='b', unit_scale=True, leave=False) as pbar:
+                    for buf in req.iter_content(block_size):
+                        pbar.update(len(buf))
+                        out_file.write(buf)
                 out_file.close()
             shutil.move(tmp_file, book_path)
 
